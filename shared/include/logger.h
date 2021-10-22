@@ -1,3 +1,11 @@
+/**
+ * Header of functions that log messages based on a predefined value given as
+ * an argument with the '-D' gcc flag, where:
+ * LOGGER_LEVEL == 2: all debug and communication info is logged
+ * LOGGER_LEVEL == 1: all Client/Server communication info is logged
+ * LOGGER_LEVEL == 0: nothing is logged
+ */
+
 #pragma once
 
 #include <stdarg.h>
@@ -13,13 +21,14 @@
 FILE *_logger;
 bool _fileExists = false;
 
-/**
- * Function that logs messages based on a predefined value given as an argument
- * with the '-D' gcc flag, where:
- * LOGGER_LEVEL == 2: all debug and communication info is logged
- * LOGGER_LEVEL == 1: all Client/Server communication info is logged
- * LOGGER_LEVEL == 0: nothing is logged
- */
+void logSet(const char *filename)
+{
+    if (!_fileExists)
+    {
+        _logger = fopen(filename, "w");
+        _fileExists = true;
+    }
+}
 void logDebug(const char *format, ...)
 {
 #if (!defined(LOGGER_LEVEL) || LOGGER_LEVEL < LOG_ALL)
@@ -29,11 +38,6 @@ void logDebug(const char *format, ...)
     va_start(args, format);
     va_end(args);
 
-    if (!_fileExists)
-    {
-        _logger = fopen("log.txt", "w");
-        _fileExists = true;
-    }
     fprintf(_logger, "[DEBUG] ");
     vfprintf(_logger, format, args);
     fprintf(_logger, "\n");
@@ -50,11 +54,6 @@ void logComm(FILE *where, const char *format, ...)
     va_start(args, format);
     va_end(args);
 
-    if (!_fileExists)
-    {
-        _logger = fopen("log.txt", "w");
-        _fileExists = true;
-    }
     fprintf(_logger, "[COMM] ");
     vfprintf(_logger, format, args);
     fprintf(_logger, "\n");

@@ -3,19 +3,20 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "../include/logger.h"
+#include <string.h>
+#include "logger.h"
 
 void *allocatePtr(size_t typeSize, size_t amount)
 {
     void *obj = malloc(amount * typeSize);
-    memset(obj, '\n', amount);
+    memset(obj, '\0', amount);
     logDebug("Allocated %d bytes at %p", amount * typeSize, obj);
     return obj;
 }
 
 void **allocatePtrPtr(size_t typeSize, size_t ptrSize, size_t cols, size_t rows)
 {
-    void **obj = malloc(rows * ptrSize);
+    void **obj = (void **)malloc(rows * ptrSize);
     logDebug("Allocated %d bytes at %p", rows * typeSize, obj);
     for (int i = 0; i < rows; i++)
     {
