@@ -49,6 +49,7 @@ void sendToServer(const char *prompt, int *sock)
     ssize_t len = getline(&userPrompt, &_buffSize, stdin);
     send(*sock, userPrompt, len, 0);
     logDebug("Client->Server %ld bytes\nmessage:\t%s", len, userPrompt);
+    fflush(stdin);
 }
 void receiveFromServer()
 {

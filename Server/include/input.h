@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../shared/include/memory.h"
+#include "../../shared/include/memory.h"
 
 typedef struct Command
 {
