@@ -51,6 +51,8 @@ void sendToServer(const char *prompt, int *sock)
     logDebug("Client->Server %ld bytes\nmessage:\t%s", len, userPrompt);
     fflush(stdin);
 }
-void receiveFromServer()
+void receiveFromServer(char *buffer, int *sock)
 {
+    read(*sock, buffer, 1024);
+    logDebug("Server->Client %ld bytes\nmessage:\t%s", strlen(buffer), buffer);
 }
