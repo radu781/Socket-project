@@ -6,17 +6,16 @@
 
 #pragma once
 
+#include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
+#include "../../shared/include/constants.h"
 #include "../../shared/include/logger.h"
 #include "../../shared/include/memory.h"
 
 int establishConnection(int *server_fd, int *new_socket)
 {
-    const unsigned PORT = 8080;
-
     logSet("log.txt");
     struct sockaddr_in address;
     int opt = 1;
@@ -25,6 +24,7 @@ int establishConnection(int *server_fd, int *new_socket)
     // Creating socket file descriptor
     if ((*server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
+        perror("Socket: ");
         logDebug("Socket failed");
         return -1;
     }
@@ -32,6 +32,7 @@ int establishConnection(int *server_fd, int *new_socket)
     if (setsockopt(*server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
                    sizeof(opt)))
     {
+        perror("Socket: ");
         logDebug("setsockopt");
         return -1;
     }
@@ -41,11 +42,13 @@ int establishConnection(int *server_fd, int *new_socket)
     // Forcefully attaching socket to the port 8080
     if (bind(*server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
     {
+        perror("Bind: ");
         logDebug("bind failed");
         return -1;
     }
     if (listen(*server_fd, 3) < 0)
     {
+        perror("Listen: ");
         logDebug("listen");
         return -1;
     }
@@ -53,6 +56,7 @@ int establishConnection(int *server_fd, int *new_socket)
                               (socklen_t *)&addrlen)) < 0)
     {
         perror("accept");
+        logDebug("accept");
         return -1;
     }
     return 0;
@@ -60,11 +64,9 @@ int establishConnection(int *server_fd, int *new_socket)
 
 void sendToClient(const char *data, int *sock)
 {
-    const size_t len = 10;  
-    const char *padding = "-=-e";
-    char bytesToSend[len + strlen(padding)];
+    char bytesToSend[firstBufferLen + strlen(padding)];
 
-    snprintf(bytesToSend, len, "%ld", strlen(data));
+    snprintf(bytesToSend, firstBufferLen, "%ld", strlen(data));
     strcpy(bytesToSend + strlen(bytesToSend), padding);
 
     send(*sock, bytesToSend, strlen(bytesToSend), 0);

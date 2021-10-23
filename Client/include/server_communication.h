@@ -6,21 +6,20 @@
 
 #pragma once
 
+#include <arpa/inet.h>
 #include <stdlib.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
+#include "../../shared/include/constants.h"
 #include "../../shared/include/logger.h"
 #include "../../shared/include/memory.h"
 
 int establishConnection(int *sock)
 {
-    const char *localhost = "127.0.0.1";
-    const unsigned PORT = 8080;
-
     logSet("log.txt");
     struct sockaddr_in serv_addr;
     if ((*sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
+        perror("Socket: ");
         logDebug("Socket creation error");
         return -1;
     }
@@ -30,11 +29,13 @@ int establishConnection(int *sock)
     // Convert IPv4 and IPv6 addresses from text to binary form
     if (inet_pton(AF_INET, localhost, &serv_addr.sin_addr) <= 0)
     {
+        perror("Address: ");
         logDebug("Invalid address/Address not supported");
         return -1;
     }
     if (connect(*sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
+        perror("Connection: ");
         logDebug("Connection Failed");
         return -1;
     }
@@ -50,28 +51,33 @@ void sendToServer(const char *prompt, int *sock)
     size_t _buffSize;
     ssize_t len = getline(&userPrompt, &_buffSize, stdin);
     strcpy(userPrompt + len - 1, userPrompt + len);
+    
     send(*sock, userPrompt, len, 0);
     logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s\n", len - 1, userPrompt);
     fflush(stdin);
 }
-void receiveFromServer(char *buffer, int *sock)
-{
-    const size_t len = 10;
-    char bytesToGet[len + 1];
-    memset(bytesToGet, 0, len + 1);
-    read(*sock, bytesToGet, len);
 
-    char tmp[len];
-    size_t indexNumber = strstr(bytesToGet, "-=-e") - bytesToGet;
+char *receiveFromServer(int *sock)
+{
+    char bytesToGet[firstBufferLen + 1];
+    memset(bytesToGet, 0, firstBufferLen + 1);
+    read(*sock, bytesToGet, firstBufferLen);
+
+    char tmp[firstBufferLen];
+    size_t indexNumber = strstr(bytesToGet, padding) - bytesToGet;
     for (int i = 0; i < indexNumber; i++)
         tmp[i] = bytesToGet[i];
     tmp[indexNumber] = 0;
     size_t sizeOfBuff = atoi(tmp);
 
     char *dataSent = allocatePtr(sizeof(char), sizeOfBuff + 1);
-    strcpy(dataSent, bytesToGet + indexNumber + strlen("-=-e"));
+    strcpy(dataSent, bytesToGet + indexNumber + strlen(padding));
 
-    read(*sock, dataSent + strlen(bytesToGet + indexNumber + strlen("-=-e")), sizeOfBuff);
+    if (sizeOfBuff + strlen(padding) < firstBufferLen)
+        return dataSent;
+    read(*sock, dataSent + strlen(bytesToGet + indexNumber + strlen(padding)), sizeOfBuff);
     logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s\n", strlen(dataSent), dataSent);
     fflush(stdout);
+
+    return dataSent;
 }

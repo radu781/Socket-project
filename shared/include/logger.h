@@ -58,7 +58,10 @@ void logComm(FILE *where, const char *format, ...)
     vfprintf(_logger, format, args);
     fprintf(_logger, "\n");
     fflush(_logger);
-
+    
+    va_start(args, format);
+    va_end(args);
+    
     fprintf(where, "[COMM] ");
     vfprintf(where, format, args);
     fprintf(where, "\n");

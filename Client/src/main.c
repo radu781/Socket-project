@@ -12,8 +12,9 @@ int main()
     for (;;)
     {
         sendToServer("Enter message to send: ", &sock);
-        char buffer[1024] = {};
-        receiveFromServer(buffer, &sock);
+        char *buffer = receiveFromServer(&sock);
+        printf("%s\n", buffer);
+        deallocatePtr(buffer);
     }
     logCleanUp();
     return 0;
