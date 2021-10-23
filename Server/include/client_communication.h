@@ -6,9 +6,12 @@
 
 #pragma once
 
+#include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "../../shared/include/logger.h"
+#include "../../shared/include/memory.h"
 
 int establishConnection(int *server_fd, int *new_socket)
 {
@@ -57,10 +60,22 @@ int establishConnection(int *server_fd, int *new_socket)
 
 void sendToClient(const char *data, int *sock)
 {
+    const size_t len = 10;  
+    const char *padding = "-=-e";
+    char bytesToSend[len + strlen(padding)];
+
+    snprintf(bytesToSend, len, "%ld", strlen(data));
+    strcpy(bytesToSend + strlen(bytesToSend), padding);
+
+    send(*sock, bytesToSend, strlen(bytesToSend), 0);
+    fflush(stdout);
+
     send(*sock, data, strlen(data), 0);
-    logDebug("Server->Client %ld bytes\nmessage:\t%s", strlen(data), data);
+    logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s\n", strlen(data), data);
     fflush(stdout);
 }
-void receiveFromClient()
+void receiveFromClient(char *buffer, int *sock)
 {
+    read(*sock, buffer, 1024);
+    logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s\n", strlen(buffer), buffer);
 }

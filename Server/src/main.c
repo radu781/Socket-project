@@ -12,13 +12,10 @@ int main()
 
     for (;;)
     {
-        // receive below
-        char serverReply[128] = "Reply from server";
         char buffer[1024] = {};
-        read(new_socket, buffer, 1024);
-        logDebug("Received [%s] [%ld bytes]\n", buffer, strlen(buffer));
+        receiveFromClient(buffer, &new_socket);
 
-        sendToClient(serverReply, &new_socket);
+        sendToClient("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", &new_socket);
     }
     logCleanUp();
     return 0;

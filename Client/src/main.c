@@ -14,7 +14,6 @@ int main()
         sendToServer("Enter message to send: ", &sock);
         char buffer[1024] = {};
         receiveFromServer(buffer, &sock);
-        printf("%s", buffer);
     }
     logCleanUp();
     return 0;

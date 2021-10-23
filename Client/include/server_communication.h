@@ -6,9 +6,11 @@
 
 #pragma once
 
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include "../../shared/include/logger.h"
+#include "../../shared/include/memory.h"
 
 int establishConnection(int *sock)
 {
@@ -47,12 +49,29 @@ void sendToServer(const char *prompt, int *sock)
     char *userPrompt = NULL;
     size_t _buffSize;
     ssize_t len = getline(&userPrompt, &_buffSize, stdin);
+    strcpy(userPrompt + len - 1, userPrompt + len);
     send(*sock, userPrompt, len, 0);
-    logDebug("Client->Server %ld bytes\nmessage:\t%s", len, userPrompt);
+    logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s\n", len - 1, userPrompt);
     fflush(stdin);
 }
 void receiveFromServer(char *buffer, int *sock)
 {
-    read(*sock, buffer, 1024);
-    logDebug("Server->Client %ld bytes\nmessage:\t%s", strlen(buffer), buffer);
+    const size_t len = 10;
+    char bytesToGet[len + 1];
+    memset(bytesToGet, 0, len + 1);
+    read(*sock, bytesToGet, len);
+
+    char tmp[len];
+    size_t indexNumber = strstr(bytesToGet, "-=-e") - bytesToGet;
+    for (int i = 0; i < indexNumber; i++)
+        tmp[i] = bytesToGet[i];
+    tmp[indexNumber] = 0;
+    size_t sizeOfBuff = atoi(tmp);
+
+    char *dataSent = allocatePtr(sizeof(char), sizeOfBuff + 1);
+    strcpy(dataSent, bytesToGet + indexNumber + strlen("-=-e"));
+
+    read(*sock, dataSent + strlen(bytesToGet + indexNumber + strlen("-=-e")), sizeOfBuff);
+    logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s\n", strlen(dataSent), dataSent);
+    fflush(stdout);
 }
