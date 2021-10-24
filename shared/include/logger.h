@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef LOGGER_LEVEL
 #define LOG_ALL 2
@@ -76,4 +77,18 @@ void logCleanUp()
         fclose(_logger);
         _fileExists = false;
     }
+}
+
+void checkIO(ssize_t actual, size_t object)
+{
+    if (actual == -1)
+    {
+        perror("Error: ");
+        logDebug("Read/write error");
+        exit(1);
+    }
+    if (actual == 0)
+        logDebug("Read/wrote EOF");
+    if (actual != object)
+        logDebug("Expected %ld bytes, got %ld", object, actual);
 }

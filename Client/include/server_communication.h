@@ -23,6 +23,7 @@ int establishConnection(int *sock)
         logDebug("Socket creation error");
         return -1;
     }
+    logDebug("Socket ok");
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
 
@@ -33,12 +34,14 @@ int establishConnection(int *sock)
         logDebug("Invalid address/Address not supported");
         return -1;
     }
+    logDebug("Address ok");
     if (connect(*sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
         perror("Connection: ");
         logDebug("Connection Failed");
         return -1;
     }
+    logDebug("Connected");
 
     return 0;
 }
@@ -47,13 +50,15 @@ void sendToServer(const char *prompt, int *sock)
 {
     printf("%s", prompt);
 
-    char *userPrompt = NULL;
+    char *userPrompt1 = NULL;
     size_t _buffSize;
-    ssize_t len = getline(&userPrompt, &_buffSize, stdin);
-    strcpy(userPrompt + len - 1, userPrompt + len);
-    
-    send(*sock, userPrompt, len, 0);
-    logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s\n", len - 1, userPrompt);
+    ssize_t len1 = getline(&userPrompt1, &_buffSize, stdin);
+    checkIO(len1, strlen(userPrompt1));
+    strcpy(userPrompt1 + len1 - 1, userPrompt1 + len1);
+
+    ssize_t sent = send(*sock, userPrompt1, len1, 0);
+    checkIO(sent, strlen(userPrompt1) - 1);
+    logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s\n", len1 - 1, userPrompt1);
     fflush(stdin);
 }
 
@@ -61,7 +66,8 @@ char *receiveFromServer(int *sock)
 {
     char bytesToGet[firstBufferLen + 1];
     memset(bytesToGet, 0, firstBufferLen + 1);
-    read(*sock, bytesToGet, firstBufferLen);
+    ssize_t iread = read(*sock, bytesToGet, firstBufferLen);
+    checkIO(iread, strlen(bytesToGet));
 
     char tmp[firstBufferLen];
     size_t indexNumber = strstr(bytesToGet, padding) - bytesToGet;
@@ -75,7 +81,9 @@ char *receiveFromServer(int *sock)
 
     if (sizeOfBuff + strlen(padding) < firstBufferLen)
         return dataSent;
-    read(*sock, dataSent + strlen(bytesToGet + indexNumber + strlen(padding)), sizeOfBuff);
+    iread = read(*sock, dataSent + strlen(bytesToGet + indexNumber + strlen(padding)), sizeOfBuff);
+    checkIO(iread, strlen(dataSent + strlen(bytesToGet + indexNumber + strlen(padding))));
+
     logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s\n", strlen(dataSent), dataSent);
     fflush(stdout);
 

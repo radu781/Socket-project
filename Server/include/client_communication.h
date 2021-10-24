@@ -28,6 +28,7 @@ int establishConnection(int *server_fd, int *new_socket)
         logDebug("Socket failed");
         return -1;
     }
+    logDebug("Socket ok");
     // Forcefully attaching socket to the port 8080
     if (setsockopt(*server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
                    sizeof(opt)))
@@ -36,6 +37,7 @@ int establishConnection(int *server_fd, int *new_socket)
         logDebug("setsockopt");
         return -1;
     }
+    logDebug("Setsockopt ok");
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
@@ -46,12 +48,14 @@ int establishConnection(int *server_fd, int *new_socket)
         logDebug("bind failed");
         return -1;
     }
+    logDebug("Bind ok");
     if (listen(*server_fd, 3) < 0)
     {
         perror("Listen: ");
         logDebug("listen");
         return -1;
     }
+    logDebug("Listening");
     if ((*new_socket = accept(*server_fd, (struct sockaddr *)&address,
                               (socklen_t *)&addrlen)) < 0)
     {
@@ -59,6 +63,7 @@ int establishConnection(int *server_fd, int *new_socket)
         logDebug("accept");
         return -1;
     }
+    logDebug("Accepted");
     return 0;
 }
 
@@ -69,15 +74,18 @@ void sendToClient(const char *data, int *sock)
     snprintf(bytesToSend, firstBufferLen, "%ld", strlen(data));
     strcpy(bytesToSend + strlen(bytesToSend), padding);
 
-    send(*sock, bytesToSend, strlen(bytesToSend), 0);
+    ssize_t sent = send(*sock, bytesToSend, strlen(bytesToSend), 0);
+    checkIO(sent, strlen(bytesToSend));
     fflush(stdout);
 
-    send(*sock, data, strlen(data), 0);
+    sent = send(*sock, data, strlen(data), 0);
+    checkIO(sent, strlen(data));
     logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s\n", strlen(data), data);
     fflush(stdout);
 }
 void receiveFromClient(char *buffer, int *sock)
 {
-    read(*sock, buffer, 1024);
+    ssize_t red = read(*sock, buffer, 1024);
+    checkIO(red, strlen(buffer) - 1);
     logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s\n", strlen(buffer), buffer);
 }
