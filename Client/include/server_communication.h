@@ -41,8 +41,8 @@ int establishConnection(int *sock)
         logDebug("Connection Failed");
         return -1;
     }
-    logDebug("Connected");
 
+    logDebug("Connected\n");
     return 0;
 }
 
@@ -53,12 +53,19 @@ void sendToServer(const char *prompt, int *sock)
     char *userPrompt1 = NULL;
     size_t _buffSize;
     ssize_t len1 = getline(&userPrompt1, &_buffSize, stdin);
+    if (len1 == -1)
+    {
+        ssize_t sent = send(*sock, " ", 1, 0);
+        checkIO(sent, 1);
+        logComm(stdout, "Client->Server %ld bytes\nmessage:\t[EOF]", 1);
+        exit(1);
+    }
     checkIO(len1, strlen(userPrompt1));
     strcpy(userPrompt1 + len1 - 1, userPrompt1 + len1);
 
     ssize_t sent = send(*sock, userPrompt1, len1, 0);
-    checkIO(sent, strlen(userPrompt1) - 1);
-    logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s\n", len1 - 1, userPrompt1);
+    checkIO(sent, strlen(userPrompt1) + 1);
+    logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s", len1 - 1, userPrompt1);
     fflush(stdin);
 }
 

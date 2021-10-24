@@ -63,7 +63,8 @@ int establishConnection(int *server_fd, int *new_socket)
         logDebug("accept");
         return -1;
     }
-    logDebug("Accepted");
+    
+    logDebug("Accepted\n");
     return 0;
 }
 
@@ -80,12 +81,12 @@ void sendToClient(const char *data, int *sock)
 
     sent = send(*sock, data, strlen(data), 0);
     checkIO(sent, strlen(data));
-    logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s\n", strlen(data), data);
+    logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s", strlen(data), data);
     fflush(stdout);
 }
 void receiveFromClient(char *buffer, int *sock)
 {
     ssize_t red = read(*sock, buffer, 1024);
-    checkIO(red, strlen(buffer) - 1);
-    logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s\n", strlen(buffer), buffer);
+    checkIO(red, strlen(buffer) + 1);
+    logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s", strlen(buffer), buffer);
 }
