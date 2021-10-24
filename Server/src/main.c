@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../include/client_communication.h"
+#include "../include/input.h"
 
 int main()
 {
@@ -14,8 +15,10 @@ int main()
     {
         char buffer[1024] = {};
         receiveFromClient(buffer, &new_socket);
+        struct Command cmd = validateInput(buffer);
+        char *inputResult = executeInput(&cmd, buffer);
 
-        sendToClient("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", &new_socket);
+        sendToClient(inputResult, &new_socket);
     }
     logCleanUp();
     return 0;
