@@ -5,13 +5,6 @@
 #include "commands.h"
 #include "../../shared/include/memory.h"
 
-typedef struct Command
-{
-    char *body;
-    char **args;
-    unsigned argCount;
-};
-
 struct Command validateInput(char *fromUser)
 {
     struct Command *cmd = (struct Command *)allocatePtr(sizeof(struct Command), 1);
@@ -26,6 +19,7 @@ struct Command validateInput(char *fromUser)
     else
     {
         cmd->argCount = -2;
+        _validCommand = false;
         return *cmd;
     }
 
@@ -33,6 +27,8 @@ struct Command validateInput(char *fromUser)
     for (int i = 0; i < commandCount && !found; i++)
         if (strcmp(cmd->body, supportedCommands[i]) == 0)
             found = true;
+
+    _validCommand = found;
     cmd->argCount = found ? 0 : -1;
 
     return *cmd;
@@ -85,6 +81,22 @@ char *executeInput(struct Command *cmd, char *fromUser)
         ptr = strtok(NULL, delim);
     }
 
+    if (strcmp(cmd->body, supportedCommands[0]) == 0)
+        return _login(cmd);
+    if (strcmp(cmd->body, supportedCommands[1]) == 0)
+        return _getUsers(cmd);
+    if (strcmp(cmd->body, supportedCommands[2]) == 0)
+        return _getInfo(cmd);
+    if (strcmp(cmd->body, supportedCommands[3]) == 0)
+        return _logout(cmd);
+    if (strcmp(cmd->body, supportedCommands[4]) == 0)
+        return _quit(cmd);
+    if (strcmp(cmd->body, supportedCommands[5]) == 0)
+        return _help(cmd);
+
     // deallocatePtr((void *)&vals);
-    return "";
+    deallocatePtr((void *)cmd->body);
+    deallocatePtrPtr((void **)cmd->args, cmd->argCount);
+    // deallocatePtr((void *)cmd);
+    return "Unexpected error";
 }
