@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <unistd.h>
+#include "../include/user_info.h"
 #include "../../shared/include/constants.h"
 #include "../../shared/include/logger.h"
 #include "../../shared/include/memory.h"
@@ -63,25 +65,33 @@ int establishConnection(int *server_fd, int *new_socket)
         logDebug("accept");
         return -1;
     }
-    
+
     logDebug("Accepted\n");
     return 0;
 }
 
-void sendToClient(const char *data, int *sock)
+void sendToClient(const char *toSend, int *sock)
 {
-    char bytesToSend[firstBufferLen + strlen(padding)];
+    char bytesToSend[10];
 
-    snprintf(bytesToSend, firstBufferLen, "%ld", strlen(data));
+    char *dummy = (char *)allocatePtr(sizeof(char), strlen(toSend) + _USERLEN + 1);
+    if (_loggedIn)
+        snprintf(dummy, strlen(toSend) + _USERLEN, "%s\n%s > ", toSend, _username);
+    else
+        snprintf(dummy, strlen(toSend) + _USERLEN, "%s\n", toSend);
+
+    snprintf(bytesToSend, firstBufferLen, "%ld", strlen(dummy));
     strcpy(bytesToSend + strlen(bytesToSend), padding);
 
     ssize_t sent = send(*sock, bytesToSend, strlen(bytesToSend), 0);
     checkIO(sent, strlen(bytesToSend));
     fflush(stdout);
 
-    sent = send(*sock, data, strlen(data), 0);
-    checkIO(sent, strlen(data));
-    logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s", strlen(data), data);
+    sent = send(*sock, dummy, strlen(dummy), 0);
+    checkIO(sent, strlen(dummy));
+    logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s", strlen(dummy), dummy);
+
+    deallocatePtr(dummy);
     fflush(stdout);
 }
 void receiveFromClient(char *buffer, int *sock)
