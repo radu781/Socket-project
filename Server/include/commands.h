@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <utmp.h>
 #include "user_info.h"
 #include "../../shared/include/logger.h"
 #include "../../shared/include/memory.h"
@@ -60,7 +61,24 @@ char *_login(const struct Command *cmd)
 
 char *_getUsers(const struct Command *cmd)
 {
-    return "";
+    if (!_loggedIn)
+        return "This command is available only to logged users, try \"login <user>\"";
+
+    char *out = (char *)allocatePtr(sizeof(char), 128 * 12);
+    _haveAllocated = true;
+
+    for (;;)
+    {
+        struct utmp *ut = getutent();
+        if (ut == NULL)
+            break;
+
+        char *buff = (char *)allocatePtr(sizeof(char), 128);
+        snprintf(buff, 128, "user: %s\nhost: %s\nseconds: %d\nmicrosec: %d\n\n", ut->ut_user, ut->ut_host, ut->ut_tv.tv_sec, ut->ut_tv.tv_usec);
+        strcat(out, buff);
+        deallocatePtr(buff);
+    }
+    return out;
 }
 
 char *_getInfo(const struct Command *cmd)
