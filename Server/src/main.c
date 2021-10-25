@@ -1,6 +1,3 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
 #include "../include/client_communication.h"
 #include "../include/input.h"
 

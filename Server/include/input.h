@@ -24,7 +24,7 @@ struct Command validateInput(char *fromUser)
     }
 
     bool found = false;
-    for (int i = 0; i < commandCount && !found; i++)
+    for (int i = 0; i < _COMMAND_COUNT && !found; i++)
         if (strcmp(cmd->body, supportedCommands[i]) == 0)
             found = true;
 

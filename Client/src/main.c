@@ -8,11 +8,12 @@ int main()
     if (establishConnection(&sock) < 0)
         return 1;
 
+    printf("Use \"help\" for command info\n\n");
     for (;;)
     {
-        sendToServer("Enter message to send: ", &sock);
+        sendToServer("", &sock);
         char *buffer = receiveFromServer(&sock);
-        printf("%s\n", buffer);
+        printf("%s", buffer);
         deallocatePtr(buffer);
     }
     logCleanUp();
