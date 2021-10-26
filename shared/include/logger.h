@@ -59,10 +59,10 @@ void logComm(FILE *where, const char *format, ...)
     vfprintf(_logger, format, args);
     fprintf(_logger, "\n");
     fflush(_logger);
-    
+
     va_start(args, format);
     va_end(args);
-    
+
     fprintf(where, "[COMM] ");
     vfprintf(where, format, args);
     fprintf(where, "\n");
@@ -78,7 +78,10 @@ void logCleanUp()
         _fileExists = false;
     }
 }
-
+/**
+ * Checks data integrity by comparing the actual data byte size with the
+ * sent/received byte size
+ */
 void checkIO(ssize_t actual, size_t object)
 {
     if (actual == -1)

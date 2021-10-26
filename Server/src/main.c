@@ -10,15 +10,10 @@ int main()
     for (;;)
     {
         receiveFromClient(&new_socket);
-        struct Command cmd = validateInput();
-        char *inputResult = executeInput(&cmd);
+        char *result = processInput();
 
-        sendToClient(inputResult, &new_socket);
-        if (_haveAllocated)
-        {
-            deallocatePtr(inputResult);
-            _haveAllocated = false;
-        }
+        sendToClient(result, &new_socket);
+        cleanInput(result);
         if (_hasQuit)
             break;
     }

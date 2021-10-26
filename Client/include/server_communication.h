@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include "../../shared/include/constants.h"
 #include "../../shared/include/logger.h"
 #include "../../shared/include/memory.h"
@@ -48,13 +49,12 @@ int establishConnection(int *sock)
     return 0;
 }
 
-void sendToServer(const char *prompt, int *sock)
+void sendToServer(int *sock)
 {
-    printf("%s", prompt);
-
-    char *userPrompt1 = NULL;
+    // Read user input and check if it is EOF
+    char *userPrompt = NULL;
     size_t _buffSize;
-    ssize_t len1 = getline(&userPrompt1, &_buffSize, stdin);
+    ssize_t len1 = getline(&userPrompt, &_buffSize, stdin);
     if (len1 == -1)
     {
         ssize_t sent = send(*sock, " ", 1, 0);
@@ -62,22 +62,40 @@ void sendToServer(const char *prompt, int *sock)
         logComm(stdout, "Client->Server %ld bytes\nmessage:\t[EOF]", 1);
         exit(1);
     }
-    checkIO(len1, strlen(userPrompt1));
-    strcpy(userPrompt1 + len1 - 1, userPrompt1 + len1);
+    checkIO(len1, strlen(userPrompt));
+    strcpy(userPrompt + len1 - 1, userPrompt + len1);
 
-    ssize_t sent = send(*sock, userPrompt1, len1, 0);
-    checkIO(sent, strlen(userPrompt1) + 1);
-    logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s", len1 - 1, userPrompt1);
+    // Send the input to the server
+    ssize_t sent = send(*sock, userPrompt, len1, 0);
+    checkIO(sent, strlen(userPrompt) + 1);
+    logComm(stdout, "Client->Server %ld bytes\nmessage:\t%s", len1 - 1, userPrompt);
+    deallocatePtr(userPrompt);
     fflush(stdin);
+}
+
+bool _userQuit(const char *reply)
+{
+    char *quitTest = (char *)allocatePtr(sizeof(char), 6 + strlen(padding));
+
+    snprintf(quitTest, 6 + strlen(padding), "quit%s\n", padding);
+    if (strstr(reply, quitTest))
+    {
+        logComm(stdout, "Client quit");
+        _quit = true;
+    }
+
+    return _quit;
 }
 
 char *receiveFromServer(int *sock)
 {
+    // Read first chunk of data
     char bytesToGet[firstBufferLen + 1];
     memset(bytesToGet, 0, firstBufferLen + 1);
     ssize_t iread = read(*sock, bytesToGet, firstBufferLen);
     checkIO(iread, strlen(bytesToGet));
 
+    // Determine the size of the reply
     char tmp[firstBufferLen];
     size_t indexNumber = strstr(bytesToGet, padding) - bytesToGet;
     for (int i = 0; i < indexNumber; i++)
@@ -85,24 +103,31 @@ char *receiveFromServer(int *sock)
     tmp[indexNumber] = 0;
     size_t sizeOfBuff = atoi(tmp);
 
+    // Recreate the message starting from index of size + padding
     char *dataSent = allocatePtr(sizeof(char), sizeOfBuff + 1);
     strcpy(dataSent, bytesToGet + indexNumber + strlen(padding));
 
+    // Check if another read is necessary
     if (sizeOfBuff + strlen(padding) < firstBufferLen)
         return dataSent;
-    iread = read(*sock, dataSent + strlen(bytesToGet + indexNumber + strlen(padding)), sizeOfBuff);
-    checkIO(iread, strlen(dataSent + strlen(bytesToGet + indexNumber + strlen(padding))));
+    size_t offset = strlen(bytesToGet + indexNumber + strlen(padding));
+    iread = read(*sock, dataSent + offset, sizeOfBuff);
+    checkIO(iread, strlen(dataSent + offset));
 
-    char *quitTest = (char *)allocatePtr(sizeof(char), 6 + strlen(padding));
-    snprintf(quitTest, 6 + strlen(padding), "quit%s\n", padding);
-    if (strstr(dataSent, quitTest))
+    // Check if the client issued the quit command
+    if (_userQuit(dataSent))
     {
         logComm(stdout, "Client quit");
-        _quit = true;
         return dataSent;
     }
     logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s\n", strlen(dataSent), dataSent);
     fflush(stdout);
 
     return dataSent;
+}
+
+void display(char *buff)
+{
+    printf("%s", buff);
+    deallocatePtr(buff);
 }

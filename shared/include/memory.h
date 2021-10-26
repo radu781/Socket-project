@@ -1,3 +1,7 @@
+/**
+ * Header with functions that wrap malloc() and free() to prevent memory leaks
+ */
+
 #pragma once
 
 #include <stddef.h>

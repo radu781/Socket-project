@@ -1,5 +1,3 @@
-#include <unistd.h>
-#include <string.h>
 #include "../include/server_communication.h"
 
 int main()
@@ -11,12 +9,11 @@ int main()
     printf("Use \"help\" for command info\n\n");
     for (;;)
     {
-        sendToServer("", &sock);
+        sendToServer(&sock);
         char *buffer = receiveFromServer(&sock);
         if (_quit)
             break;
-        printf("%s", buffer);
-        deallocatePtr(buffer);
+        display(buffer);
     }
     logCleanUp();
     return 0;

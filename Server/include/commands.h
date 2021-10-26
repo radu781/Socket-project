@@ -1,3 +1,7 @@
+/*
+    Header with functions that actually process the client input
+*/
+
 #pragma once
 
 #include <stdio.h>
@@ -13,7 +17,7 @@
 
 const char supportedCommands[_COMMAND_COUNT][17] = {
     "login", "register", "get-logged-users", "get-proc-info", "logout", "quit", "help"};
-const char* _configFile = ".config";
+const char *_configFile = ".config";
 
 bool _hasQuit = false;
 
@@ -26,7 +30,7 @@ typedef struct Command
 
 bool _findUser(const char *username)
 {
-    FILE *config = fopen(_configFile, "r");
+    // Attempt to open the config file in read mode
     if (access(_configFile, F_OK))
     {
         logDebug("Can't create config file %s", _configFile);
@@ -37,6 +41,7 @@ bool _findUser(const char *username)
         logDebug("Can't read config file %s", _configFile);
         return false;
     }
+    FILE *config = fopen(_configFile, "r");
 
     char buff[_USERLEN];
 
@@ -59,8 +64,10 @@ char *_login(const struct Command *cmd)
     if (_loggedIn)
     {
         char *buff = (char *)allocatePtr(sizeof(char), 47 + _USERLEN);
-        snprintf(buff, 47 + _USERLEN, "Already logged in as %s, try \"logout\" first", _username);
         _haveAllocated = true;
+
+        snprintf(buff, 47 + _USERLEN, "Already logged in as %s, try \"logout\" first", _username);
+
         return buff;
     }
     if (_findUser(cmd->args[0]))
@@ -68,6 +75,7 @@ char *_login(const struct Command *cmd)
         strcpy(_username, cmd->args[0]);
         logComm(stdout, "Logged in as %s", _username);
         _loggedIn = true;
+
         return "";
     }
 
@@ -82,13 +90,15 @@ char *_register(const struct Command *cmd)
     if (_loggedIn)
     {
         char *buff = (char *)allocatePtr(sizeof(char), 47 + _USERLEN);
-        snprintf(buff, 47 + _USERLEN, "Already logged in as %s, try \"logout\" first", _username);
         _haveAllocated = true;
+        
+        snprintf(buff, 47 + _USERLEN, "Already logged in as %s, try \"logout\" first", _username);
+
         return buff;
     }
     if (!_findUser(cmd->args[0]))
     {
-        FILE *config = fopen(_configFile, "a");
+        // Attempt to open the config file in append mode
         if (access(_configFile, F_OK))
         {
             logDebug("Can't open config file %s", _configFile);
@@ -99,11 +109,14 @@ char *_register(const struct Command *cmd)
             logDebug("Can't write to config file %s", _configFile);
             return "Internal error";
         }
+        FILE *config = fopen(_configFile, "a");
 
+        // Appends new user to the config file and logs the client in as that user
         fprintf(config, "%s\n", cmd->args[0]);
         strcpy(_username, cmd->args[0]);
         logComm(stdout, "Registered new user: %s", _username);
         _loggedIn = true;
+
         fclose(config);
         return "";
     }
@@ -111,12 +124,12 @@ char *_register(const struct Command *cmd)
     return "User already exists, try \"login <user>\"";
 }
 
-char *_getUsers(const struct Command *cmd)
+char *_getUsers()
 {
     if (!_loggedIn)
         return "This command is available only to logged users, try \"login <user>\"";
 
-    char *out = (char *)allocatePtr(sizeof(char), 128 * 12);
+    char *out = (char *)allocatePtr(sizeof(char), 256 * 12);
     _haveAllocated = true;
 
     for (;;)
@@ -125,10 +138,10 @@ char *_getUsers(const struct Command *cmd)
         if (ut == NULL)
             break;
 
-        char *buff = (char *)allocatePtr(sizeof(char), 128);
-        snprintf(buff, 128, "user: %s\nhost: %s\nseconds: %d\nmicrosec: %d\n\n", ut->ut_user, ut->ut_host, ut->ut_tv.tv_sec, ut->ut_tv.tv_usec);
+        char buff[256];
+        snprintf(buff, 256, "user: %s\nhost: %s\nseconds: %d\nmicrosec: %d\n\n",
+                 ut->ut_user, ut->ut_host, ut->ut_tv.tv_sec, ut->ut_tv.tv_usec);
         strcat(out, buff);
-        deallocatePtr(buff);
     }
     return out;
 }
@@ -141,6 +154,8 @@ char *_getInfo(const struct Command *cmd)
         return "This command is available only to logged users, try \"login <user>\"";
 
     char path[24];
+
+    // Attempt to open the status file
     snprintf(path, 24, "/proc/%s/status", cmd->args[0]);
     if (access(path, F_OK))
         return "Process not found";
@@ -148,10 +163,12 @@ char *_getInfo(const struct Command *cmd)
         return "Unable to read";
     FILE *statusFile = fopen(path, "r");
 
-    char *buff = NULL;
-    size_t _buffSize;
     char *out = (char *)allocatePtr(sizeof(char), 128);
     _haveAllocated = true;
+
+    // Go through the file and find the data needed
+    char *buff = NULL;
+    size_t _buffSize;
     while (getline(&buff, &_buffSize, statusFile) != EOF)
         if (strstr(buff, "Name") || strstr(buff, "State") || (strstr(buff, "Pid") && !strstr(buff, "TracerPid")) ||
             strstr(buff, "Uid") || strstr(buff, "VmSize"))
@@ -160,7 +177,7 @@ char *_getInfo(const struct Command *cmd)
     return out;
 }
 
-char *_logout(const struct Command *cmd)
+char *_logout()
 {
     if (!_loggedIn)
         return "Already logged out";
@@ -170,7 +187,7 @@ char *_logout(const struct Command *cmd)
     return "Logged out";
 }
 
-char *_quit(const struct Command *cmd)
+char *_quit()
 {
     char *buff = (char *)allocatePtr(sizeof(char), 5 + strlen(padding));
     snprintf(buff, 5 + strlen(padding), "quit%s", padding);
@@ -179,7 +196,7 @@ char *_quit(const struct Command *cmd)
     return buff;
 }
 
-char *_help(const struct Command *cmd)
+char *_help()
 {
     return "Command list:\n\
 \tlogin <user> (logs you in as <user> if they exist)\n\

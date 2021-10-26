@@ -74,19 +74,23 @@ void sendToClient(const char *toSend, int *sock)
 {
     char bytesToSend[10];
 
+    // Creates a buffer for the data to be sent to the client and the username
     char *dummy = (char *)allocatePtr(sizeof(char), strlen(toSend) + _USERLEN + 1);
     if (_loggedIn)
-        snprintf(dummy, strlen(toSend) + _USERLEN, "%s\n%s > ", toSend, _username);
+        snprintf(dummy, strlen(toSend) + _USERLEN, "%s\n%s> ", toSend, _username);
     else
         snprintf(dummy, strlen(toSend) + _USERLEN, "%s\n", toSend);
 
+    // Adds the data byte size and separates it from the actual message
     snprintf(bytesToSend, firstBufferLen, "%ld", strlen(dummy));
     strcpy(bytesToSend + strlen(bytesToSend), padding);
 
+    // Send the number of bytes
     ssize_t sent = send(*sock, bytesToSend, strlen(bytesToSend), 0);
     checkIO(sent, strlen(bytesToSend));
     fflush(stdout);
-
+    
+    // Send the message body
     sent = send(*sock, dummy, strlen(dummy), 0);
     checkIO(sent, strlen(dummy));
     logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s", strlen(dummy), dummy);
@@ -94,6 +98,7 @@ void sendToClient(const char *toSend, int *sock)
     deallocatePtr(dummy);
     fflush(stdout);
 }
+
 void receiveFromClient(int *sock)
 {
     ssize_t red = read(*sock, buffer, 1024);
