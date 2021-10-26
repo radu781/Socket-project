@@ -13,6 +13,8 @@
 #include "../../shared/include/logger.h"
 #include "../../shared/include/memory.h"
 
+bool _quit = false;
+
 int establishConnection(int *sock)
 {
     logSet("log.txt");
@@ -91,6 +93,14 @@ char *receiveFromServer(int *sock)
     iread = read(*sock, dataSent + strlen(bytesToGet + indexNumber + strlen(padding)), sizeOfBuff);
     checkIO(iread, strlen(dataSent + strlen(bytesToGet + indexNumber + strlen(padding))));
 
+    char *quitTest = (char *)allocatePtr(sizeof(char), 6 + strlen(padding));
+    snprintf(quitTest, 6 + strlen(padding), "quit%s\n", padding);
+    if (strstr(dataSent, quitTest))
+    {
+        logComm(stdout, "Client quit");
+        _quit = true;
+        return dataSent;
+    }
     logComm(stdout, "Server->Client %ld bytes\nmessage:\t%s\n", strlen(dataSent), dataSent);
     fflush(stdout);
 

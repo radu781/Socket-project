@@ -15,6 +15,9 @@ int main()
         char *inputResult = executeInput(&cmd, buffer);
 
         sendToClient(inputResult, &new_socket);
+
+        if (_hasQuit)
+            break;
     }
     logCleanUp();
     return 0;

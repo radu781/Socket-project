@@ -13,6 +13,8 @@ int main()
     {
         sendToServer("", &sock);
         char *buffer = receiveFromServer(&sock);
+        if (_quit)
+            break;
         printf("%s", buffer);
         deallocatePtr(buffer);
     }

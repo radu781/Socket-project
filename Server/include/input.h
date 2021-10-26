@@ -84,14 +84,16 @@ char *executeInput(struct Command *cmd, char *fromUser)
     if (strcmp(cmd->body, supportedCommands[0]) == 0)
         return _login(cmd);
     if (strcmp(cmd->body, supportedCommands[1]) == 0)
-        return _getUsers(cmd);
+        return _register(cmd);
     if (strcmp(cmd->body, supportedCommands[2]) == 0)
-        return _getInfo(cmd);
+        return _getUsers(cmd);
     if (strcmp(cmd->body, supportedCommands[3]) == 0)
-        return _logout(cmd);
+        return _getInfo(cmd);
     if (strcmp(cmd->body, supportedCommands[4]) == 0)
-        return _quit(cmd);
+        return _logout(cmd);
     if (strcmp(cmd->body, supportedCommands[5]) == 0)
+        return _quit(cmd);
+    if (strcmp(cmd->body, supportedCommands[6]) == 0)
         return _help(cmd);
 
     // deallocatePtr((void *)&vals);

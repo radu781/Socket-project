@@ -8,10 +8,12 @@
 #include "../../shared/include/logger.h"
 #include "../../shared/include/memory.h"
 
-#define _COMMAND_COUNT 6
+#define _COMMAND_COUNT 7
 
 const char supportedCommands[_COMMAND_COUNT][17] = {
-    "login", "get-logged-users", "get-proc-info", "logout", "quit", "help"};
+    "login", "register", "get-logged-users", "get-proc-info", "logout", "quit", "help"};
+
+bool _hasQuit = false;
 
 typedef struct Command
 {
@@ -57,6 +59,32 @@ char *_login(const struct Command *cmd)
     }
 
     return "User not found";
+}
+
+char *_register(const struct Command *cmd)
+{
+    if (cmd->argCount == 0)
+        return "Usage: register <user>";
+
+    if (_loggedIn)
+    {
+        char *buff = (char *)allocatePtr(sizeof(char), 47 + _USERLEN);
+        snprintf(buff, 47 + _USERLEN, "Already logged in as %s, try \"logout\" first", _username);
+        _haveAllocated = true;
+        return buff;
+    }
+    if (!_findUser(cmd->args[0]))
+    {
+        FILE *_configFile = fopen(".config", "a");
+        fprintf(_configFile, "%s\n", cmd->args[0]);
+        strcpy(_username, cmd->args[0]);
+        logComm(stdout, "Registered new user: %s", _username);
+        _loggedIn = true;
+        fclose(_configFile);
+        return "";
+    }
+
+    return "User already exists, try \"login <user>\"";
 }
 
 char *_getUsers(const struct Command *cmd)
@@ -120,16 +148,21 @@ char *_logout(const struct Command *cmd)
 
 char *_quit(const struct Command *cmd)
 {
-    return "";
+    char *buff = (char*)allocatePtr(sizeof(char), 5 + strlen(padding));
+    snprintf(buff, 5 + strlen(padding), "quit%s", padding);
+    _haveAllocated = true;
+    _hasQuit = true;
+    return buff;
 }
 
 char *_help(const struct Command *cmd)
 {
     return "Command list:\n\
 \tlogin <user> (logs you in as <user> if they exist)\n\
+\tregister <user> (creates new account if it doesn't exist)\n\
 \tget-logged-users (get the users on the system)\n\
 \tget-proc-info <pid> (get information about the process with pid <pid>)\n\
 \tlogout (logs you out of the current user)\n\
-\tquit (?)\n\
+\tquit (closes the client and server)\n\
 \thelp (displays this)";
 }
