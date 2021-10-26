@@ -7,4 +7,4 @@
 bool _loggedIn = false;
 char _username[_USERLEN];
 bool _haveAllocated = false;
-bool _validCommand = false;
+char buffer[1024];

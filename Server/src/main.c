@@ -9,13 +9,16 @@ int main()
 
     for (;;)
     {
-        char buffer[1024] = {};
-        receiveFromClient(buffer, &new_socket);
-        struct Command cmd = validateInput(buffer);
-        char *inputResult = executeInput(&cmd, buffer);
+        receiveFromClient(&new_socket);
+        struct Command cmd = validateInput();
+        char *inputResult = executeInput(&cmd);
 
         sendToClient(inputResult, &new_socket);
-
+        if (_haveAllocated)
+        {
+            deallocatePtr(inputResult);
+            _haveAllocated = false;
+        }
         if (_hasQuit)
             break;
     }

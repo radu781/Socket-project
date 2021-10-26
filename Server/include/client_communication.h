@@ -94,7 +94,7 @@ void sendToClient(const char *toSend, int *sock)
     deallocatePtr(dummy);
     fflush(stdout);
 }
-void receiveFromClient(char *buffer, int *sock)
+void receiveFromClient(int *sock)
 {
     ssize_t red = read(*sock, buffer, 1024);
     checkIO(red, strlen(buffer) + 1);

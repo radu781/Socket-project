@@ -4,13 +4,14 @@
 #include <string.h>
 #include "commands.h"
 #include "../../shared/include/memory.h"
+#include "../include/user_info.h"
 
-struct Command validateInput(char *fromUser)
+struct Command validateInput()
 {
     struct Command *cmd = (struct Command *)allocatePtr(sizeof(struct Command), 1);
 
     const char *delim = ",:?! ";
-    char *ptr = strtok(fromUser, delim);
+    char *ptr = strtok(buffer, delim);
     if (ptr != NULL)
     {
         cmd->body = (char *)allocatePtr(sizeof(char), strlen(ptr) + 1);
@@ -19,7 +20,6 @@ struct Command validateInput(char *fromUser)
     else
     {
         cmd->argCount = -2;
-        _validCommand = false;
         return *cmd;
     }
 
@@ -28,7 +28,6 @@ struct Command validateInput(char *fromUser)
         if (strcmp(cmd->body, supportedCommands[i]) == 0)
             found = true;
 
-    _validCommand = found;
     cmd->argCount = found ? 0 : -1;
 
     return *cmd;
@@ -60,21 +59,26 @@ struct _ArgPair _countArgs(const char *string, const char *delim)
     return *out;
 }
 
-char *executeInput(struct Command *cmd, char *fromUser)
+void _clean(struct Command *cmd)
+{
+    deallocatePtr(cmd->body);
+    deallocatePtrPtr((void **)cmd->args, cmd->argCount);
+}
+
+char *executeInput(struct Command *cmd)
 {
     if (cmd->argCount == -1)
         return "Command not found, please try again";
     if (cmd->argCount == -2)
         return "\",:?! [EOF]\" are not valid commands";
 
-    fromUser += strlen(fromUser) + 1;
+    strcpy(buffer, buffer + strlen(buffer) + 1);
     const char *delim = ",:?!";
-    struct _ArgPair vals = _countArgs(fromUser, delim);
+    struct _ArgPair vals = _countArgs(buffer, delim);
     cmd->argCount = vals.count;
     cmd->args = (char **)allocatePtrPtr(sizeof(char), sizeof(char *), cmd->argCount, vals.maxLen);
-
     unsigned index = 0;
-    char *ptr = strtok(fromUser, delim);
+    char *ptr = strtok(buffer, delim);
     while (ptr != NULL)
     {
         strcpy(cmd->args[index++], ptr);
@@ -82,23 +86,47 @@ char *executeInput(struct Command *cmd, char *fromUser)
     }
 
     if (strcmp(cmd->body, supportedCommands[0]) == 0)
-        return _login(cmd);
+    {
+        char *out = _login(cmd);
+        _clean(cmd);
+        return out;
+    }
     if (strcmp(cmd->body, supportedCommands[1]) == 0)
-        return _register(cmd);
+    {
+        char *out = _register(cmd);
+        _clean(cmd);
+        return out;
+    }
     if (strcmp(cmd->body, supportedCommands[2]) == 0)
-        return _getUsers(cmd);
+    {
+        char *out = _getUsers(cmd);
+        _clean(cmd);
+        return out;
+    }
     if (strcmp(cmd->body, supportedCommands[3]) == 0)
-        return _getInfo(cmd);
+    {
+        char *out = _getInfo(cmd);
+        _clean(cmd);
+        return out;
+    }
     if (strcmp(cmd->body, supportedCommands[4]) == 0)
-        return _logout(cmd);
+    {
+        char *out = _logout(cmd);
+        _clean(cmd);
+        return out;
+    }
     if (strcmp(cmd->body, supportedCommands[5]) == 0)
-        return _quit(cmd);
+    {
+        char *out = _quit(cmd);
+        _clean(cmd);
+        return out;
+    }
     if (strcmp(cmd->body, supportedCommands[6]) == 0)
-        return _help(cmd);
+    {
+        char *out = _help(cmd);
+        _clean(cmd);
+        return out;
+    }
 
-    // deallocatePtr((void *)&vals);
-    deallocatePtr((void *)cmd->body);
-    deallocatePtrPtr((void **)cmd->args, cmd->argCount);
-    // deallocatePtr((void *)cmd);
     return "Unexpected error";
 }
