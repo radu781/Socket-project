@@ -28,6 +28,10 @@ typedef struct Command
     unsigned argCount;
 };
 
+/**
+ * Returns true if the user is in the config file, also used by the parent process
+ * to remember the user name
+ */
 bool _findUser(const char *username)
 {
     // Attempt to open the config file in read mode
@@ -45,16 +49,17 @@ bool _findUser(const char *username)
 
     char buff[_USERLEN];
 
+    size_t tempLocation =0;
     while (fscanf(config, "%s", buff) != EOF)
     {
-        _usernameIndex++;
+        tempLocation++;
         if (strcmp(buff, username) == 0)
         {
+            _usernameIndex = tempLocation;
             fclose(config);
             return true;
         }
     }
-    _usernameIndex = 20;
 
     fclose(config);
     return false;
@@ -62,6 +67,8 @@ bool _findUser(const char *username)
 
 void _findUserAt(size_t index)
 {
+    _usernameIndex = index;
+    
     // Attempt to open the config file in read mode
     if (access(_configFile, F_OK))
     {
@@ -118,6 +125,8 @@ char *_register(const struct Command *cmd)
 
     if (_loggedIn)
     {
+        _findUser(_username);
+
         char *buff = (char *)allocatePtr(sizeof(char), 47 + _USERLEN);
         _haveAllocated = true;
 
@@ -161,6 +170,9 @@ char *_getUsers()
     char *out = (char *)allocatePtr(sizeof(char), 256 * 12);
     _haveAllocated = true;
 
+    _findUser(_username);
+    
+    // Loop though the utmp file and add formatted contents to a buffer
     for (;;)
     {
         struct utmp *ut = getutent();
@@ -183,6 +195,7 @@ char *_getInfo(const struct Command *cmd)
         return "This command is available only to logged users, try \"login <user>\"";
 
     char path[24];
+    _findUser(_username);
 
     // Attempt to open the status file
     snprintf(path, 24, "/proc/%s/status", cmd->args[0]);
@@ -210,6 +223,8 @@ char *_logout()
 {
     if (!_loggedIn)
         return "Already logged out";
+    
+    _findUser(_username);
 
     _usernameIndex = 0;
     _loggedIn = false;
@@ -219,6 +234,7 @@ char *_logout()
 
 char *_quit()
 {
+    _findUser(_username);
     char *buff = (char *)allocatePtr(sizeof(char), 5 + strlen(padding));
     snprintf(buff, 5 + strlen(padding), "quit%s", padding);
     _haveAllocated = true;

@@ -13,7 +13,7 @@
                 "-o",
                 "bin/app",
                 "-D",
-                "LOGGER_LEVEL = 2"
+                "LOGGER_LEVEL = 0"
             ],
             "options": {
                 "cwd": "${fileWorkspaceFolder}"
