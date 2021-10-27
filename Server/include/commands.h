@@ -49,7 +49,7 @@ bool _findUser(const char *username)
 
     char buff[_USERLEN];
 
-    size_t tempLocation =0;
+    size_t tempLocation = 0;
     while (fscanf(config, "%s", buff) != EOF)
     {
         tempLocation++;
@@ -68,7 +68,7 @@ bool _findUser(const char *username)
 void _findUserAt(size_t index)
 {
     _usernameIndex = index;
-    
+
     // Attempt to open the config file in read mode
     if (access(_configFile, F_OK))
     {
@@ -171,7 +171,7 @@ char *_getUsers()
     _haveAllocated = true;
 
     _findUser(_username);
-    
+
     // Loop though the utmp file and add formatted contents to a buffer
     for (;;)
     {
@@ -194,27 +194,41 @@ char *_getInfo(const struct Command *cmd)
     if (!_loggedIn)
         return "This command is available only to logged users, try \"login <user>\"";
 
-    char path[24];
     _findUser(_username);
+    char *out = (char *)allocatePtr(sizeof(char), cmd->argCount * 128);
+    for (int i = 0; i < cmd->argCount; i++)
+    {
+        char path[24];
 
-    // Attempt to open the status file
-    snprintf(path, 24, "/proc/%s/status", cmd->args[0]);
-    if (access(path, F_OK))
-        return "Process not found";
-    if (access(path, R_OK))
-        return "Unable to read";
-    FILE *statusFile = fopen(path, "r");
-
-    char *out = (char *)allocatePtr(sizeof(char), 128);
-    _haveAllocated = true;
-
-    // Go through the file and find the data needed
-    char *buff = NULL;
-    size_t _buffSize;
-    while (getline(&buff, &_buffSize, statusFile) != EOF)
-        if (strstr(buff, "Name") || strstr(buff, "State") || (strstr(buff, "Pid") && !strstr(buff, "TracerPid")) ||
-            strstr(buff, "Uid") || strstr(buff, "VmSize"))
+        // Attempt to open the status file
+        snprintf(path, 24, "/proc/%s/status", cmd->args[i]);
+        if (access(path, F_OK))
+        {
+            char buff[64];
+            snprintf(buff, 64, "Process <%s> not found", cmd->args[i]);
             strcat(out, buff);
+            continue;
+        }
+        if (access(path, R_OK))
+        {
+            char buff[64];
+            snprintf(buff, 64, "Unable to read process file <%s>", cmd->args[i]);
+            strcat(out, buff);
+            continue;
+        }
+        FILE *statusFile = fopen(path, "r");
+
+        _haveAllocated = true;
+
+        // Go through the file and find the data needed
+        char *buff = NULL;
+        size_t _buffSize;
+        while (getline(&buff, &_buffSize, statusFile) != EOF)
+            if (strstr(buff, "Name") || strstr(buff, "State") || (strstr(buff, "Pid") && !strstr(buff, "TracerPid")) ||
+                strstr(buff, "Uid") || strstr(buff, "VmSize"))
+                strcat(out, buff);
+        strcat(out, "-=-=-\n");
+    }
 
     return out;
 }
@@ -223,7 +237,7 @@ char *_logout()
 {
     if (!_loggedIn)
         return "Already logged out";
-    
+
     _findUser(_username);
 
     _usernameIndex = 0;

@@ -86,6 +86,11 @@ void _writeAndExit(int fd[2], char *buff, bool registerOffset)
         exit(msglen * maxusers);
 }
 
+/**
+ * Created a child process that looks up the client command (no arguments)
+ * in a supported command list and executes it if the arguments (if given)
+ * are supported
+ */
 char *_checkCommands(struct Command *cmd)
 {
     pid_t pid;
@@ -154,6 +159,8 @@ char *_checkCommands(struct Command *cmd)
 
             _writeAndExit(fd, out, false);
         }
+
+        _writeAndExit(fd, "Unexpected error", false);
     default:
         close(fd[1]);
         wait(&exitVal);
@@ -185,7 +192,7 @@ char *executeInput(struct Command *cmd)
     const char *delim = ",:?! ";
     struct _ArgPair vals = _countArgs(buffer, delim);
     cmd->argCount = vals.count;
-    cmd->args = (char **)allocatePtrPtr(sizeof(char), sizeof(char *), cmd->argCount, vals.maxLen);
+    cmd->args = (char **)allocatePtrPtr(sizeof(char), sizeof(char *), vals.maxLen + 1, cmd->argCount + 1);
 
     // Find and set all arguments
     unsigned index = 0;
