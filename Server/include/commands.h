@@ -46,14 +46,42 @@ bool _findUser(const char *username)
     char buff[_USERLEN];
 
     while (fscanf(config, "%s", buff) != EOF)
+    {
+        _usernameIndex++;
         if (strcmp(buff, username) == 0)
         {
             fclose(config);
             return true;
         }
+    }
+    _usernameIndex = 20;
 
     fclose(config);
     return false;
+}
+
+void _findUserAt(size_t index)
+{
+    // Attempt to open the config file in read mode
+    if (access(_configFile, F_OK))
+    {
+        logDebug("Can't create config file %s", _configFile);
+        return;
+    }
+    if (access(_configFile, R_OK))
+    {
+        logDebug("Can't read config file %s", _configFile);
+        return;
+    }
+    FILE *config = fopen(_configFile, "r");
+
+    char buff[_USERLEN];
+
+    for (int i = 0; i < index; i++)
+        fscanf(config, "%s", buff);
+    strcpy(_username, buff);
+
+    fclose(config);
 }
 
 char *_login(const struct Command *cmd)
@@ -63,6 +91,7 @@ char *_login(const struct Command *cmd)
 
     if (_loggedIn)
     {
+        _findUser(cmd->args[0]);
         char *buff = (char *)allocatePtr(sizeof(char), 47 + _USERLEN);
         _haveAllocated = true;
 
@@ -91,7 +120,7 @@ char *_register(const struct Command *cmd)
     {
         char *buff = (char *)allocatePtr(sizeof(char), 47 + _USERLEN);
         _haveAllocated = true;
-        
+
         snprintf(buff, 47 + _USERLEN, "Already logged in as %s, try \"logout\" first", _username);
 
         return buff;
@@ -182,6 +211,7 @@ char *_logout()
     if (!_loggedIn)
         return "Already logged out";
 
+    _usernameIndex = 0;
     _loggedIn = false;
     strcpy(_username, "");
     return "Logged out";
