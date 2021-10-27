@@ -15,3 +15,4 @@ size_t _usernameIndex = 0;
 bool _haveAllocated = false;
 // Used for receiving the client input
 char buffer[1024];
+const size_t maxusers = 20;

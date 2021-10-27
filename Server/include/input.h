@@ -75,6 +75,17 @@ void _clean(struct Command *cmd)
     deallocatePtrPtr((void **)cmd->args, cmd->argCount);
 }
 
+void _writeAndExit(int fd[2], char *buff, bool registerOffset)
+{
+    write(fd[1], buff, strlen(buff));
+
+    size_t msglen = strlen(buff) / 100 + (strlen(buff) % 100 != 0);
+    if (_loggedIn)
+        exit(_usernameIndex + registerOffset + msglen * maxusers);
+    else
+        exit(msglen * maxusers);
+}
+
 char *_checkCommands(struct Command *cmd)
 {
     pid_t pid;
@@ -85,8 +96,7 @@ char *_checkCommands(struct Command *cmd)
         return "Internal error";
     }
 
-    int exitVal = false;
-    const size_t maxusers = 20;
+    int exitVal = 0;
     switch (pid = fork())
     {
     case -1:
@@ -99,85 +109,50 @@ char *_checkCommands(struct Command *cmd)
         {
             char *out = _login(cmd);
             _clean(cmd);
-            write(fd[1], out, strlen(out));
 
-            size_t msglen = strlen(out) / 100 + (strlen(out) % 100 != 0);
-            if (_loggedIn)
-                exit(_usernameIndex + msglen * maxusers);
-            else
-                exit(0 + msglen * maxusers);
+            _writeAndExit(fd, out, false);
         }
         if (strcmp(cmd->body, supportedCommands[1]) == 0)
         {
             char *out = _register(cmd);
             _clean(cmd);
-            write(fd[1], out, strlen(out));
 
-            size_t msglen = strlen(out) / 100 + (strlen(out) % 100 != 0);
-            if (_loggedIn)
-                exit(_usernameIndex + 1 + msglen * maxusers);
-            else
-                exit(0 + msglen * maxusers);
+            _writeAndExit(fd, out, true);
         }
         if (strcmp(cmd->body, supportedCommands[2]) == 0)
         {
             char *out = _getUsers();
             _clean(cmd);
-            write(fd[1], out, strlen(out));
 
-            size_t msglen = strlen(out) / 100 + (strlen(out) % 100 != 0);
-            if (_loggedIn)
-                exit(_usernameIndex + msglen * maxusers);
-            else
-                exit(0 + msglen * maxusers);
+            _writeAndExit(fd, out, false);
         }
         if (strcmp(cmd->body, supportedCommands[3]) == 0)
         {
             char *out = _getInfo(cmd);
             _clean(cmd);
-            write(fd[1], out, strlen(out));
 
-            size_t msglen = strlen(out) / 100 + (strlen(out) % 100 != 0);
-            if (_loggedIn)
-                exit(_usernameIndex + msglen * maxusers);
-            else
-                exit(0 + msglen * maxusers);
+            _writeAndExit(fd, out, false);
         }
         if (strcmp(cmd->body, supportedCommands[4]) == 0)
         {
             char *out = _logout();
             _clean(cmd);
-            write(fd[1], out, strlen(out));
 
-            size_t msglen = strlen(out) / 100 + (strlen(out) % 100 != 0);
-            if (_loggedIn)
-                exit(_usernameIndex + msglen * maxusers);
-            else
-                exit(0 + msglen * maxusers);
+            _writeAndExit(fd, out, false);
         }
         if (strcmp(cmd->body, supportedCommands[5]) == 0)
         {
             char *out = _quit();
             _clean(cmd);
-            write(fd[1], out, strlen(out));
 
-            size_t msglen = strlen(out) / 100 + (strlen(out) % 100 != 0);
-            if (_loggedIn)
-                exit(_usernameIndex + msglen * maxusers);
-            else
-                exit(0 + msglen * maxusers);
+            _writeAndExit(fd, out, false);
         }
         if (strcmp(cmd->body, supportedCommands[6]) == 0)
         {
             char *out = _help();
             _clean(cmd);
-            write(fd[1], out, strlen(out));
 
-            size_t msglen = strlen(out) / 100 + (strlen(out) % 100 != 0);
-            if (_loggedIn)
-                exit(_usernameIndex + msglen * maxusers);
-            else
-                exit(0 + msglen * maxusers);
+            _writeAndExit(fd, out, false);
         }
     default:
         close(fd[1]);
